@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Insight-Style Party Game with Rooms</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #181818; color: #fff; text-align: center; padding: 40px; }
+    .container { max-width: 500px; margin: 0 auto; background: #222; padding: 30px; border-radius: 20px; box-shadow: 0 0 20px #000; }
+    button { background: #e91e63; border: none; padding: 12px 25px; font-size: 16px; color: white; border-radius: 10px; cursor: pointer; margin-top: 20px; }
+    button:hover { background: #c2185b; }
+    .prompt { font-size: 22px; margin-top: 30px; min-height: 80px; }
+    .player { margin-top: 10px; font-style: italic; }
+    input, select { padding: 10px; border-radius: 8px; border: none; margin-top: 10px; width: 100%; }
+    #playersList { margin-top: 10px; font-size: 14px; }
+    #roomSection, #gameSection { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎉 Insight Party Game</h1>
+    
+    <div id="roomSection">
+      <input type="text" id="roomInput" placeholder="Enter room code (e.g. ABC123)" maxlength="10" />
+      <button onclick="createRoom()">➕ Create Room</button>
+      <button onclick="joinRoom()">🔑 Join Room</button>
+      <p id="roomMessage"></p>
+    </div>
+    
+    <div id="gameSection" style="display:none;">
+      <p><strong>Room:</strong> <span id="roomCodeDisplay"></span></p>
+      <input type="text" id="nameInput" placeholder="Enter player name" />
+      <button onclick="addPlayer()">➕ Add Player</button>
+      <div id="playersList"></div>
+      
+      <div style="margin-top:30px;">
+        <button onclick="nextTurn()">➡️ Next Turn</button>
+      </div>
+      
+      <div class="prompt" id="prompt"></div>
+      <div>
+        <input type="text" id="answerInput" placeholder="Type your answer here" style="display:none; margin-top:10px; width: 80%;" />
+        <button id="submitAnswerBtn" onclick="submitAnswer()" style="display:none; margin-top:10px;">✅ Submit Answer</button>
+      </div>
+      <div class="player" id="player"></div>
+      
+      <button onclick="leaveRoom()" style="margin-top:20px; background:#555;">🚪 Leave Room</button>
+    </div>
+  </div>
+
+  <script>
+    const prompts = [
+      // 100 prompts here
+      "Who here is most likely to ghost someone after a great date?",
+      "Reveal something you've never told anyone in this room.",
+      "If you had to swap lives with someone here, who would it be and why?",
+      "What's your secret guilty pleasure?",
+      "Name the person here most likely to survive a zombie apocalypse.",
+      "What's a red flag you ignored in a past relationship?",
+      "Give a compliment to the person to your left.",
+      "What's something you pretend to like but secretly don't?",
+      "If you could erase one memory, what would it be?",
+      "Who in this room gives off main character energy?",
+      "What's your most irrational fear?",
+      "Who do you think would make a great villain in a movie?",
+      "If you could time travel, what moment would you revisit?",
+      "What's a lie you've told that no one here knows about?",
+      "Which player would you want on your apocalypse team and why?",
+      "What's your weirdest recurring dream?",
+      "Name a song that describes your current life vibe.",
+      "What’s one thing you’re too afraid to try but really want to?",
+      "What's the pettiest reason you ever disliked someone?",
+      "If your life was a meme, which one would it be?",
+
+      "Describe your perfect weekend in three words.",
+      "If you were a ghost, who would you haunt first?",
+      "What's the worst date you've ever been on?",
+      "Who here would survive longest in the wilderness?",
+      "If you could instantly master a skill, what would it be?",
+      "What's a habit you have that annoys others?",
+      "If you had to eat one meal forever, what would it be?",
+      "Who is most likely to become a millionaire?",
+      "What’s your biggest irrational fear?",
+      "If you could switch lives with a celebrity, who would it be?",
+      "What's the most embarrassing thing you've done in public?",
+      "Who’s the biggest drama queen/king here?",
+      "If you were stranded on an island, who would you want with you?",
+      "What’s the weirdest thing you've ever eaten?",
+      "Which player is most likely to start a dance party?",
+      "What's your go-to karaoke song?",
+      "If you were an animal, what would you be?",
+      "What's something you wish you could forget?",
+      "Who here is the best liar?",
+      "What’s your spirit emoji?",
+
+      "What’s the most spontaneous thing you’ve ever done?",
+      "If you could be famous for something, what would it be?",
+      "Who would survive a horror movie the longest?",
+      "If you had to give up one social media forever, which would it be?",
+      "What’s your guilty pleasure TV show?",
+      "Who here is most likely to become a secret agent?",
+      "Describe your dream vacation.",
+      "What’s your biggest pet peeve?",
+      "Who is most likely to forget their own birthday?",
+      "What’s your hidden talent?",
+      "If you had a superpower, what would it be?",
+      "What’s the worst gift you’ve ever received?",
+      "Who here is most likely to win a reality TV show?",
+      "If you were a cocktail, what would you be called?",
+      "What’s your funniest childhood memory?",
+      "Who would you trust with your deepest secret?",
+      "If you were invisible for a day, what would you do?",
+      "What’s something you’ve never told your parents?",
+      "Who’s most likely to become famous on TikTok?",
+      "If you could only listen to one song forever, what would it be?",
+
+      "What’s your most awkward date story?",
+      "Who here is the biggest prankster?",
+      "If you had to live in a movie universe, which one?",
+      "What’s the weirdest dream you’ve ever had?",
+      "Who here is the biggest foodie?",
+      "What’s your signature dance move?",
+      "If you had to give up one of your senses, which one?",
+      "Who’s most likely to run a marathon?",
+      "What’s a fashion trend you secretly love?",
+      "If you won the lottery tomorrow, what’s the first thing you’d buy?",
+      "Who’s most likely to become a meme?",
+      "What’s your favorite way to relax?",
+      "If you could relive one day from your past, which would it be?",
+      "Who here is the best storyteller?",
+      "What’s the strangest compliment you’ve ever received?",
+      "If you could live anywhere in the world, where would it be?",
+      "Who’s most likely to binge-watch an entire series in one day?",
+      "What’s your go-to comfort food?",
+      "If you were a character in a book, what kind would you be?",
+      "Who here is the most adventurous?",
+
+      // Spicy 18+ ones
+      "What’s your wildest hookup story?",
+      "Who here would you trust to keep your biggest secret?",
+      "If you had to pick one player to be your secret crush, who?",
+      "What’s the most scandalous thing you’ve done at a party?",
+      "Who here is most likely to send a risky text?",
+      "What’s a naughty fantasy you’ve never shared?",
+      "If you could be invisible during one intimate moment, what would you watch?",
+      "Who’s most likely to sneak out for a midnight adventure?",
+      "What’s your guilty pleasure song to get in the mood?",
+      "If you had to choose one player for a secret date, who would it be?",
+      "What’s the funniest thing that’s happened to you in bed?",
+      "Who’s the best kisser here?",
+      "What’s something you’ve tried once but wouldn’t do again?",
+      "If you had to role-play one character, what would it be?",
+      "Who here is most likely to get caught sneaking out?",
+      "What’s your signature move in flirting?",
+      "If you had to kiss one player blindfolded, who?",
+      "What’s the most embarrassing thing to happen during a romantic moment?",
+      "Who here is the biggest tease?",
+      "What’s a secret desire you’ve never told anyone?"
+    ];
+
+    let currentRoom = null;
+    let players = [];
+    let currentTurn = 0;
+    let usedPrompts = new Set();
+
+    // Utility to generate random room code
+    function generateRoomCode(length = 6) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let code = '';
+      for (let i = 0; i < length; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    }
+
+    // Simulate "rooms" in localStorage for demo
+    // In real app, you'd use server + websockets
+
+    function saveRoom(roomCode) {
+      const roomData = {
+        players,
+        currentTurn,
+        usedPrompts: Array.from(usedPrompts)
+      };
+      localStorage.setItem('room_' + roomCode, JSON.stringify(roomData));
+    }
+
+    function loadRoom(roomCode) {
+      const data = localStorage.getItem('room_' + roomCode);
+      if (!data) return false;
+      const roomData = JSON.parse(data);
+      players = roomData.players || [];
+      currentTurn = roomData.currentTurn || 0;
+      usedPrompts = new Set(roomData.usedPrompts || []);
+      return true;
+    }
+
+    function createRoom() {
+      const roomCode = generateRoomCode();
+      currentRoom = roomCode;
+      players = [];
+      currentTurn = 0;
+      usedPrompts = new Set();
+      saveRoom(currentRoom);
+      document.getElementById('roomCodeDisplay').textContent = currentRoom;
+      document.getElementById('roomSection').style.display = 'none';
+      document.getElementById('gameSection').style.display = 'block';
+      document.getElementById('roomMessage').textContent = `Room created: ${currentRoom}`;
+      updatePlayersList();
+      clearPromptAndInput();
+    }
+
+    function joinRoom() {
+      const roomCode = document.getElementById('roomInput').value.trim().toUpperCase();
+      if (!roomCode) {
+        document.getElementById('roomMessage').textContent = 'Please enter a room code.';
+        return;
+      }
+      const success = loadRoom(roomCode);
+      if (!success) {
+        document.getElementById('roomMessage').textContent = 'Room not found.';
+        return;
+      }
+      currentRoom = roomCode;
+      document.getElementById('roomCodeDisplay').textContent = currentRoom;
+      document.getElementById('roomSection').style.display = 'none';
+      document.getElementById('gameSection').style.display = 'block';
+      document.getElementById('roomMessage').textContent = `Joined room: ${currentRoom}`;
+      updatePlayersList();
+      clearPromptAndInput();
+    }
+
+    function addPlayer() {
+      const nameInput = document.getElementById('nameInput');
+      let name = nameInput.value.trim();
+      if (!name) {
+        alert('Please enter a player name.');
+        return;
+      }
+      if (players.includes(name)) {
+        alert('Player name already exists.');
+        return;
+      }
+      players.push(name);
+      nameInput.value = '';
+      saveRoom(currentRoom);
+      updatePlayersList();
+    }
+
+    function updatePlayersList() {
+      const listDiv = document.getElementById('playersList');
+      if (players.length === 0) {
+        listDiv.textContent = 'No players added yet.';
+        return;
+      }
+      listDiv.innerHTML = '<strong>Players:</strong><br>' + players.map(p => p).join('<br>');
+    }
+
+    function nextTurn() {
+      if (players.length === 0) {
+        alert('Add players first.');
+        return;
+      }
+      currentTurn = (currentTurn) % players.length;
+      let promptIndex;
+
+      // Pick a new prompt that wasn't used yet
+      if (usedPrompts.size === prompts.length) {
+        usedPrompts.clear(); // reset if all used
+      }
+      do {
+        promptIndex = Math.floor(Math.random() * prompts.length);
+      } while (usedPrompts.has(promptIndex));
+      usedPrompts.add(promptIndex);
+
+      document.getElementById('prompt').textContent = prompts[promptIndex];
+      document.getElementById('player').textContent = `Player: ${players[currentTurn]}`;
+
+      // Show answer input and submit button
+      document.getElementById('answerInput').value = '';
+      document.getElementById('answerInput').style.display = 'inline-block';
+      document.getElementById('submitAnswerBtn').style.display = 'inline-block';
+
+      saveRoom(currentRoom);
+    }
+
+    function submitAnswer() {
+      const answerInput = document.getElementById('answerInput');
+      const answer = answerInput.value.trim();
+      if (!answer) {
+        alert('Please enter your answer.');
+        return;
+      }
+
+      alert(`Answer submitted:\nPlayer: ${players[currentTurn]}\nAnswer: ${answer}`);
+
+      answerInput.value = '';
+      answerInput.style.display = 'none';
+      document.getElementById('submitAnswerBtn').style.display = 'none';
+
+      // Move turn forward
+      currentTurn = (currentTurn + 1) % players.length;
+      saveRoom(currentRoom);
+
+      // Prompt user to click Next Turn for next player
+    }
+
+    function clearPromptAndInput() {
+      document.getElementById('prompt').textContent = '';
+      document.getElementById('player').textContent = '';
+      document.getElementById('answerInput').style.display = 'none';
+      document.getElementById('submitAnswerBtn').style.display = 'none';
+      document.getElementById('answerInput').value = '';
+    }
+
+    function leaveRoom() {
+      if (!confirm('Are you sure you want to leave the room?')) return;
+      currentRoom = null;
+      players = [];
+      currentTurn = 0;
+      usedPrompts.clear();
+      document.getElementById('roomSection').style.display = 'block';
+      document.getElementById('gameSection').style.display = 'none';
+      document.getElementById('roomInput').value = '';
+      document.getElementById('roomMessage').textContent = '';
+      clearPromptAndInput();
+    }
+  </script>
+</body>
+</html>
